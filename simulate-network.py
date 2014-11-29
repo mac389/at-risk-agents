@@ -11,20 +11,11 @@ max_sigmoid = np.exp(1)/(1.+np.exp(1))
 degrees = nx.degree(G)
 sigmoid = lambda value: (1./(1+np.exp(-value))-min_sigmoid)/(max_sigmoid-min_sigmoid)
 
-print degrees
-
 for node in degrees:
 	tmp = degrees[node]
 	degrees[node] = sigmoid(tmp/float(max_degree))
 
-print degrees
 
-'''
-nx.draw(G,pos=nx.spectral_layout(G), cmap=plt.get_cmap('binary'), node_color=[degrees[node] for node in G.nodes()])
-plt.show()
-
-
-'''
 
 #Choose alpha from a uniform random distirbution 
 alpha = degrees
@@ -34,6 +25,11 @@ timesteps = 10
 INITIAL = 0
 attitudes = np.zeros((n['nodes'],timesteps))
 attitudes[:,INITIAL] = np.random.random_sample(size=(n['nodes'],))
+
+#TODO: Influence kernel
+for node in G.nodes():
+	print G.successors(node)
+
 
 for t in xrange(1,timesteps):
 	for agent in G.nodes():
