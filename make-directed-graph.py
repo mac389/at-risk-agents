@@ -18,6 +18,7 @@ tmp = nx.barabasi_albert_graph(n['nodes'],n['edges'])
 G.add_edges_from(tmp.edges())
 G.add_nodes_from(tmp)
 
+
 #--create mirror image
 G.add_edges_from(nx.MultiDiGraph(nx.barabasi_albert_graph(n['nodes'],n['edges'])).reverse().edges())
 
