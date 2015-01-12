@@ -1,4 +1,5 @@
 mkdir -p $1
+echo ${1}>>.gitignore
 
 for ((count=10;count<20;count+=10)); do
 
@@ -15,4 +16,5 @@ for ((count=10;count<20;count+=10)); do
 	#Random
 	python simulate-intervention.py -t ${1}/${count}/random -r -f $count
 	python analyze-intervention.py -s ${1}/${count}/random
+
 done
