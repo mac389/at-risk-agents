@@ -19,6 +19,9 @@ class actor(object):
 		else:
 			self.variables = baseline
 
+	def internally_at_risk(self):
+		return self.values > 0
+
 	def initialize(self):
 		initial_values = 2*np.random.random_sample(size=(len(self.variables),))-1
 		for initial_value,key in zip(initial_values,self.variables.iterkeys()):
@@ -31,10 +34,10 @@ class actor(object):
 		return 1 if arr.sum()>0 else -1
 
 	def calculate_intent_to_drink(self):
-		PAST_MONTH_DRINKING = self.variables['past month drinking']
-		PSYCH_CONSEQUENCES = self.values+self.variables['attitude to psychological consequences']
+		PAST_MONTH_DRINKING = np.tanh(self.variables['past month drinking'])
+		PSYCH_CONSEQUENCES = np.tanh(self.values+self.variables['attitude to psychological consequences'])
 		
-		MED_CONSEQUENCES = self.values+self.variables['attitude to medical consequences']
+		MED_CONSEQUENCES = np.tanh(self.values+self.variables['attitude to medical consequences'])
 		intent_to_drink = np.tanh(PAST_MONTH_DRINKING + PSYCH_CONSEQUENCES + MED_CONSEQUENCES)
 
 		self.variables['past month drinking'] = intent_to_drink
@@ -49,7 +52,7 @@ class actor(object):
 
 	def inspect_calculation(self): 
 		#Assuing the output will be passed to a syntax highlighter like awesome print
-		return 'Intent to drink: %.02f = Values (%.02f) +  Medical (%.02f) + Psych(%.02f)'%(self.variables['intent to drink'],self.values,self.variables['attitude to medical consequences'],
+		return 'Intent to drink: %.02f = Hx (%.02f) +  Medical (%.02f) + Psych(%.02f)'%(self.variables['past month drinking'],self.values,self.variables['attitude to medical consequences'],
 			self.variables['attitude to psychological consequences'])
 
 	def snapshot(self,as_dict = False,print_calc=False):

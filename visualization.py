@@ -1,10 +1,12 @@
-import json,random,os, logging, itertools
+import json,random,os, logging, itertools, brewer2mpl
 import matplotlib.pyplot as plt
 import numpy as np 
 import Graphics as artist
 
 from scipy.stats import kruskal
 from matplotlib import rcParams
+from awesome_print import ap
+
 rcParams['text.usetex'] = True
 '''
  File Structure Summary 
@@ -21,11 +23,32 @@ directory = json.load(open('directory.json',READ))
 INITIAL = 0
 END = -2
 
+params = {
+   'axes.labelsize': 8,
+   'text.fontsize': 8,
+   'legend.fontsize': 10,
+   'xtick.labelsize': 10,
+   'ytick.labelsize': 10,
+   'text.usetex': True
+   }
+
+rcParams.update(params)
+
 def norm(seqs):
 
 	rng = np.ptp(np.array(seqs).ravel())
 	mn = min(np.array(seqs).ravel())
 	return map(lambda seq: 2*(seq-mn)/rng-1,seqs)
+
+def perc(data):
+   median = np.zeros(data.shape[1])
+   perc_25 = np.zeros(data.shape[1])
+   perc_75 = np.zeros(data.shape[1])
+   for i in range(0, len(median)):
+       median[i] = np.median(data[:, i])
+       perc_25[i] = np.percentile(data[:, i], 25)
+       perc_75[i] = np.percentile(data[:, i], 25)
+   return median, perc_25, perc_75
 
 def snapshots(data, indices,basepath=None, data_label='data'):
 		indices = zip(indices,indices[1:])
@@ -81,7 +104,7 @@ def hist_compare(data,criterion=None, basepath=None, criterionname='Target popul
 	plt.savefig(os.path.join(basepath,'hist_compare_full_%s'%('_'.join(criterion.split()))),dpi=300)
 
 def show_drinking_behavior(basepath=None,compare_distributions=True,
-	visualize_one_random_actor=False, visualize_all_actors=True,bubble_plot=True):
+	visualize_one_random_actor=False, visualize_all_actors=True):
 	agents = np.loadtxt(os.path.join(basepath,'responders'),delimiter=TAB)
 	filename = os.path.join(basepath,'drinking-behavior.txt')
 	drinking_behavior = np.loadtxt(filename,delimiter=TAB)
@@ -128,52 +151,33 @@ def show_drinking_behavior(basepath=None,compare_distributions=True,
 		filename = os.path.join(os.getcwd(),basepath,'drinking-behavior-visualize-all-actors.png')		
 		plt.savefig(filename,dpi=300)
 
-	if bubble_plot:
-		fig = plt.figure()
-		ax = fig.add_subplot(111)
-		#Maybe I should use the non-parametric equivalents
-		for condition, color,label in zip(np.split(drinking_behavior,2,axis=1),['k','r'],['Baseline','Intervention']):
-			mu = condition.mean(axis=0)
-			sigma = condition.std(axis=0)
-			ax.plot(mu,sigma,'%s.'%color,label=artist.format(label))
-			plt.hold(True)
-		artist.adjust_spines(ax)
-		ax.set_xlabel(r'\Large Average intent to drink $\left(\mu\right)$')
-		ax.set_ylabel(r'\Large Deviation in intent to drink $\left(\sigma\right)$')
-		filename = os.path.join(os.getcwd(),basepath,'drinking-behavior-bubble.png')
-		plt.savefig(filename,dpi=300)
-
-		del fig,ax 
-
-		fig = plt.figure()
-		ax = fig.add_subplot(111)
-		print agents
-		for condition,color,label in zip(np.split(drinking_behavior,2,axis=1),['k','r'],['Baseline', 'Intervention']):
-				mu = condition[list(agents),:].mean(axis=0)
-				sigma = condition[list(agents),:].std(axis=0)
-				ax.plot(mu,sigma,'%s.'%color,label=artist.format(label))
-				plt.hold(True)
-		artist.adjust_spines(ax)
-		ax.set_xlabel(r'\Large Average intent to drink $\left(\mu\right)$')
-		ax.set_ylabel(r'\Large Deviation in intent to drink $\left(\sigma\right)$')
-		filename = os.path.join(os.getcwd(),basepath,'drinking-behavior-bubble-responders.png')
-		plt.savefig(filename,dpi=300)
-
 def plot_variable(data,basepath=None,dataname='',criterion=None, criterionname=[]):
 	fig = plt.figure()
 	ax = fig.add_subplot(111)
 	x = range(data.shape[1])
+	ap('Plotting %s'%dataname)
 	if criterion != None:
 		if type(criterion) != list:
-			ax.errorbar(x,data[criterion,:].mean(axis=0),yerr=data[criterion,:].std(axis=0)/data[criterion,:].shape[0],fmt='--o', label= artist.format('Target Population'))
+			median, lq, uq = perc(data[criterion,:])
+			ax.plot(x,median,linewidth=2, color='#B22400')
+			ax.fill_between(x, lq, uq, alpha=0.25, linewidth=0, color='#B22400')
 		else:
-			for x_criterion,x_label in itertools.izip_longest(criterion,criterionname,fillvalue='Group'):
-				ax.errorbar(x,data[x_criterion,:].mean(axis=0),yerr=data[x_criterion,:].std(axis=0)/(data[x_criterion,:].shape[0]),fmt='--o',
-					label=artist.format(x_label))
-	ax.errorbar(x,data.mean(axis=0),yerr=data.std(axis=0)/data.shape[0],fmt='--o',label=artist.format('Full Population'))
+			bmap = brewer2mpl.get_map('Set2', 'qualitative', 7)
+			colors = bmap.mpl_colors
+			for i,(x_criterion,x_label) in enumerate(itertools.izip_longest(criterion,criterionname,fillvalue='Group')):
+				median, lq, uq = perc(data[x_criterion,:])
+				ax.plot(x,median,linewidth=2, color=colors[i], label=artist.format(x_label))
+				ax.fill_between(x, lq, uq, alpha=0.25, linewidth=0, color=colors[i])
+	
+	median, lq, uq = perc(data)
+	ax.plot(x,median,linewidth=2, color='#B22400',label=artist.format('Full population'))
+	ax.fill_between(x, lq, uq, alpha=0.25, linewidth=0, color='#B22400')
+	
 	artist.adjust_spines(ax)
 	ax.set_ylabel(artist.format(dataname))
 	ax.set_xlabel(artist.format('Time'))
+	ax.axvline(data.shape[1]/3,color='r',linewidth=2,linestyle='--')
+	ax.axvline(2*data.shape[1]/3,color='r',linewidth=2,linestyle='--')
 	plt.legend(frameon=False,loc='lower left')
 	plt.tight_layout()
 	plt.savefig(os.path.join(basepath,'%s.png'%dataname))
@@ -186,7 +190,6 @@ def time_series(basepath=None, criterion=None, criterionname=''):
 	#ax.fill_between(xrange(attitudes.shape[1]), attitudes.mean(axis=0)-attitudes.std(axis=0),
     #            attitudes.mean(axis=0) + attitudes.std(axis=0), color='k', alpha=0.4,
     #            label=artist.format('Full population'))
-	print attitudes.shape
 	ax.errorbar(xrange(attitudes.shape[1]),attitudes.mean(axis=0),yerr=(attitudes.std(axis=0)/attitudes.shape[0]))
 #	ax.plot(xrange(attitudes.shape[1]),attitudes.mean(axis=0),color='k',linewidth=2)
 	if criterion:
@@ -196,7 +199,8 @@ def time_series(basepath=None, criterion=None, criterionname=''):
                 label=artist.format('criterionname'))
 		ax.plot(xrange(data.shape[1]),data.mean(axis=0),color='r',linewidth=2)
 	artist.adjust_spines(ax)
-	ax.axvline(attitudes.shape[1]/2,color='r',linewidth=2,linestyle='--') #This is a hack
+	ax.axvline(attitudes.shape[1]/3.,color='r',linewidth=2,linestyle='--') #This is a hack
+	ax.axvline(2*attitudes.shape[1]/3.,color='r',linewidth=2,linestyle='--') #This is a hack
 	ax.set_ylabel(artist.format('Intent to drink'))
 	ax.set_xlabel(artist.format('Time'))
 	ax.set_ylim(ymin=0)
@@ -209,7 +213,8 @@ def population_summary(basepath=None, criterion = None, criterionname=''):
 	yvars.remove('past month drinking')
 	ncols = np.ceil(np.sqrt(len(yvars))).astype(int)
 	nrows = np.ceil(len(yvars)/ncols).astype(int)
-
+	MALE = 0.5
+	FEMALE = 0.3
 	fig,axs = plt.subplots(nrows=nrows,ncols=ncols,sharey=True)
 
 	for i,col in enumerate(axs):
@@ -227,13 +232,17 @@ def population_summary(basepath=None, criterion = None, criterionname=''):
 			fig.canvas.mpl_connect('draw_event', artist.on_draw)
 			artist.adjust_spines(axs[i,j])
 			if 'attitude' not in yvars[i*ncols+j]: 	
-				axs[i,j].set_xlabel(artist.format(yvars[i*ncols+j]))
+				axs[i,j].set_xlabel(artist.format(yvars[i*ncols+j].replace('drink','use')))
+				if 'gender' in yvars[i*ncols+j]:
+					axs[i,j].set_xticks([FEMALE,MALE])
+					axs[i,j].set_xticklabels(map(artist.format,['Female','Male']))
 			elif 'psychological' in yvars[i*ncols+j]:
 				label = '\n'.join(map(artist.format,['Attitude to','psychological','consequences']))
 				axs[i,j].set_xlabel(label)
 			elif 'medical' in yvars[i*ncols+j]:
 				label = '\n'.join(map(artist.format,['Attitude','to medical','consequences']))
 				axs[i,j].set_xlabel(label)
+				#axs[i,j].set_xlim([-50,50])
 
 	plt.tight_layout()
 	if criterion:

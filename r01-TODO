@@ -1,0 +1,26 @@
+1. Show quartiles on plots instead of error bars
+2. Add non-responders curve
+3. Consider ROC curve for effect size
+4. Consider ROC curve for at least two variable
+
+Thoughts on intervention:
+
+Thoughts on identification of at-risk:
+ We say an agent is at-risk if that agent: 
+  1. Is in the upper quartile in terms of susceptibility. If alpha is chosen from a uniform random distribution and the cutoff is the upper quartile, then 25% of the population is susceptible. 
+  2. Receives more peer influences promoting drugs than 75% of the population 
+
+Thought on response rate:
+   The number of true posiitives, those who are at-risk and respond to the intervention, is very low, often 0. The most direct and (likely valid) measure of outcome is PAST MONTH DRINKING. Even using that, the algorithm barely identifies any at-risk agent who will respond.
+
+
+If no agents receive internal influence, then all agents should approach their steady-states, which are all set to be zero.
+
+Why does DRINKING BEHAVIOR not match the corresponding field in the complete record. They differ by more than an order of magnitude. (FIXED)
+
+Why does drinking behavior diverge for nearly every agent despite adding a leak term?
+1. Checking that I am not updating drinking the drinking behavior in an occult place.
+   --> Very interesting. DRINKING BEAHVIOR is saved to TXT properly, but graphed incorrectly. The question now is why DRUG USE.PNG is incorrect. That graphic plots information from COMPLETE RECORD. 
+  ---> Does the graphic show correct output after changing the source of its data from COMPLETE RECORD to DRINKING BEHAVIOR. This localizes the error to a discrepancy between those two files.  
+
+     

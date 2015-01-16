@@ -47,7 +47,7 @@ influence_kernel = {node:normalize(np.array([influence[predecessor]
  						for node in G.nodes_iter()}
 
 agent = 0
-reps = 20
+reps = 1
 
 record = np.zeros((reps,stop))
 for rep in range(reps):
@@ -62,7 +62,7 @@ for rep in range(reps):
 		effect[t] = actors[0].variables['attitude to medical consequences']
 		intent[t] = actors[0].variables['intent to drink']
 
-
+		attitudes[agent,t] = attitudes[agent,t-1] + epsilon*((effect-attitudes[agent,t-1]) if (effect-attitudes[agent,t-1]) > THRESHOLDS[agent] else 0)
 		social_influence = attitudes[G.predecessors(agent),t-1].dot(influence_kernel[agent]) #kernel already normalized
 		'''
 		effect = (1-alpha[agent])*internal_influence + alpha[agent]*social_influence
@@ -82,11 +82,12 @@ for rep in range(reps):
 		'''
 	record[rep,:] = intent
 
+ap(intent)
 fig = plt.figure() 
 ax = fig.add_subplot(111)
-#ax.plot(effect,'k',linewidth=2)
-plt.hold(True)
-ax.hist(record.mean(axis=0),weights=np.ones_like(record.mean(axis=0))/len(record.mean(axis=0)))
+ax.plot(intent,'k',linewidth=2)
+#plt.hold(True)
+#ax.hist(record.mean(axis=0),weights=np.ones_like(record.mean(axis=0))/len(record.mean(axis=0)))
 #ax.errorbar(range(record.shape[1]),record.mean(axis=0),yerr=record.std(axis=0)/record.shape[0],fmt='--o')
 plt.tight_layout()
 plt.show()
